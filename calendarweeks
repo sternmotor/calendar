@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+# LAST_DAY_OF_WEEK=5: print all weeks monday - friday as header for
+#   bulletjournal week overview,
+#   friday - 2 = wednesday or monday + 2 is wednesday (in case friday
+#   calculation goes below 1)
+# Font: Eurostile
+
+YEAR = 2023
+LAST_DAY_OF_WEEK = 5  # end week at friday
+
+
+import calendar
+import datetime
+cal = calendar.Calendar()
+
+months = []
+months.append((YEAR - 1, 12, cal.monthdayscalendar(YEAR - 1, 12)))
+months.extend([(YEAR, m,  cal.monthdayscalendar(YEAR, m)) for m in range(1, 13)])
+months.append((YEAR + 1,  1, cal.monthdayscalendar(YEAR + 1, 1)))
+
+# put each day in the correct week number according to iso spec
+days = []
+
+def get_all_weeks():
+    for year, month, weeks in months:
+        for week in weeks:
+            for day_index, day in enumerate(week):
+                if day != 0:
+                    cw = datetime.date(year=year, month=month, day=day).isocalendar()[1]
+                    yield year, month, day, cw, day_index + 1
+    
+
+# assemble weeks from days
+weeks = []           
+for yr, mo, d, cw, dow in  get_all_weeks():
+    day = (yr, mo, d, cw, dow)
+    if dow == 1:
+        try:
+            weeks.append(week)
+        except NameError:
+            pass
+        finally:
+            week = [day]
+    else:
+        try:
+            week.append(day)
+        except NameError:
+            continue
+
+# loop over weeks            
+for week in weeks:
+
+    # at least one day in week must be in current year
+    yrs = [d[0] for d in week[0:LAST_DAY_OF_WEEK - 1]]
+    if not YEAR in yrs:
+        continue
+
+    # loop over days, print important days
+    week_expr = []
+    for yr, mo, d, cw, dow in week:
+        day_expr = f'{d:02d}.{mo:02d}'
+
+        # monday
+        if dow == 1:
+            week_expr.append(f'KW {cw:02d}: ')
+            week_expr.append(day_expr)
+
+        # friday or sunday
+        elif dow == LAST_DAY_OF_WEEK:
+            week_expr.append(' - ')
+            week_expr.append(day_expr)
+            week_expr.append(f'.{yr}')
+
+        else:
+            continue
+    else:
+        print(''.join(week_expr))
+
+# GMA 2021
